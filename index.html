@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Kapellen 1919 - 3. Mannschaft</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted: #9e9e9e;
+            --border-color: #333333;
+            --accent-home: #81c784; /* Grün für Heimspiel */
+            --accent-away: #ef5350; /* Rot für Auswärtsspiel */
+            --accent-training: #42a5f5; /* Blau für Training */
+            --accent-event: #ab47bc; /* Lila für Freie Termine / Events */
+            --accent-birthday: #ffca28; /* Gold/Gelb für Geburtstage */
+            --accent-yes: #81c784; /* Grün für Dabei */
+            --accent-no: #e57373; /* Rot für Abgesagt */
+            --primary: #ffa726; /* Schönes Orange */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        /* Benutzer-Leiste */
+        .user-bar {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .user-bar select, .user-bar button {
+            background: #1a1a1a;
+            color: var(--primary);
+            border: 1px solid var(--border-color);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .user-bar button:hover {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .calendar-header button {
+            background: var(--border-color);
+            color: var(--text-color);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .calendar-header button:hover {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-weight: bold;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+            font-size: 0.8rem;
+        }
+
+        .day-cell {
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            min-height: 100px;
+            max-height: 100px; /* Feste Höhe, damit nichts das Layout sprengt */
+            padding: 4px 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .day-cell:hover {
+            border-color: var(--primary);
+            overflow-y: auto; /* Beim Hovernscrollbar machen, falls viel drin steht */
+        }
+
+        .day-cell.match-home {
+            border-left: 4px solid var(--accent-home);
+            background: rgba(129, 199, 132, 0.05);
+        }
+
+        .day-cell.match-away {
+            border-left: 4px solid var(--accent-away);
+            background: rgba(239, 83, 80, 0.05);
+        }
+
+        .day-cell.training {
+            border-left: 4px solid var(--accent-training);
+            background: rgba(66, 165, 245, 0.05);
+        }
+
+        .day-cell.event {
+            border-left: 4px solid var(--accent-event);
+            background: rgba(171, 71, 188, 0.05);
+        }
+
+        .day-cell.birthday {
+            border-left: 4px solid var(--accent-birthday);
+            background: rgba(255, 202, 40, 0.05);
+        }
+
+        .day-cell.today {
+            border: 2px solid var(--primary);
+        }
+
+        .day-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 2px;
+            flex-shrink: 0;
+        }
+
+        .day-number {
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .day-status {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            width: 100%;
+            overflow: hidden;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            line-height: 1.1;
+        }
+
+        .day-training-snippet {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.3);
+            padding: 1px 2px;
+            margin-bottom: 1px;
+            border-radius: 3px;
+            font-size: 0.55rem;
+            border-left: 2px solid var(--accent-training);
+        }
+
+        .badge-match-home { background: rgba(129, 199, 132, 0.2); color: var(--accent-home); padding: 1px 2px; border-radius: 3px; font-size: 0.5rem; font-weight: bold; border: 1px solid rgba(129, 199, 132, 0.4); white-space: nowrap; }
+        .badge-match-away { background: rgba(239, 83, 80, 0.2); color: var(--accent-away); padding: 1px 2px; border-radius: 3px; font-size: 0.5rem; font-weight: bold; border: 1px solid rgba(239, 83, 80, 0.4); white-space: nowrap; }
+        .badge-training { background: rgba(66, 165, 245, 0.2); color: var(--accent-training); padding: 1px 2px; border-radius: 3px; font-size: 0.5rem; font-weight: bold; border: 1px solid rgba(66, 165, 245, 0.4); white-space: nowrap; }
+        .badge-event { background: rgba(171, 71, 188, 0.2); color: var(--accent-event); padding: 1px 2px; border-radius: 3px; font-size: 0.5rem; font-weight: bold; border: 1px solid rgba(171, 71, 188, 0.4); white-space: nowrap; }
+        .badge-birthday { background: rgba(255, 202, 40, 0.2); color: var(--accent-birthday); padding: 1px 2px; border-radius: 3px; font-size: 0.5rem; font-weight: bold; border: 1px solid rgba(255, 202, 40, 0.4); white-space: nowrap; }
+
+        /* Untere Menüs unter dem Kalender */
+        .overview-section {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .overview-section select {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            margin-top: 6px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .sections-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .custom-section {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 15px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 440px;
+            box-sizing: border-box;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .modal-content select, .modal-content input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .time-chips {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .time-chip {
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 4px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .time-chip:hover { border-color: var(--accent-training); }
+        .time-chip.selected { background: var(--accent-training); color: #000; border-color: var(--accent-training); }
+
+        .attendance-box {
+            margin-top: 15px;
+            background: #1a1a1a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .attendance-list {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .attendance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            background: #222;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-save { background: var(--primary); color: #000; font-weight: bold; }
+        .btn-close { background: var(--border-color); color: var(--text-color); }
+        .btn-danger { background: var(--accent-away); color: #fff; font-weight: bold; }
+
+        .modal-buttons button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #sync-status {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>TV Kapellen 1919</h2>
+    <div class="subtitle">Dart – 3. Mannschaft</div>
+    
+    <!-- Benutzer & Login Leiste -->
+    <div class="user-bar">
+        <div>
+            <span id="active-user-display">Nicht angemeldet</span>
+        </div>
+        <div>
+            <select id="global-user-select" onchange="loginDirectly()">
+                <option value="">-- Spieler auswählen --</option>
+            </select>
+            <button onclick="logoutUser()" id="logout-btn" style="display:none;">Abmelden</button>
+        </div>
+    </div>
+
+    <div class="calendar-header">
+        <button onclick="changeMonth(-1)">&#10094;</button>
+        <span id="month-year-display">Juli 2026</span>
+        <button onclick="changeMonth(1)">&#10095;</button>
+    </div>
+
+    <div class="calendar-grid">
+        <div class="weekday">Mo</div>
+        <div class="weekday">Di</div>
+        <div class="weekday">Mi</div>
+        <div class="weekday">Do</div>
+        <div class="weekday">Fr</div>
+        <div class="weekday">Sa</div>
+        <div class="weekday">So</div>
+    </div>
+
+    <div class="calendar-grid" id="calendar-days"></div>
+
+    <!-- TRAININGSWOCHEN-ÜBERSICHT MENÜ -->
+    <div class="overview-section">
+        <span class="section-title" style="color: var(--accent-training);">🎽 Trainings-Übersicht (Aktuelle Woche)</span>
+        <div class="attendance-box" style="margin-top: 5px;">
+            <span class="section-title" style="margin-bottom:4px; font-size:0.85rem;" id="training-week-title">Wer kommt diese Woche?</span>
+            <div class="attendance-list" id="week-training-list-display" style="max-height: 180px;">
+                <div style="color:var(--text-muted); font-size:0.75rem;">Keine Trainingseinträge in dieser Woche.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPIELTAG-ÜBERSICHT MENÜ -->
+    <div class="overview-section">
+        <span class="section-title" style="color: var(--primary);">🎯 Spieltag-Übersicht (Aktueller Monat)</span>
+        <label for="match-selector-dropdown">Wähle ein Spiel aus:</label>
+        <select id="match-selector-dropdown" onchange="onSelectedMatchChange()">
+            <option value="">-- Kein Ligaspiel in diesem Monat --</option>
+        </select>
+        
+        <div class="attendance-box" style="margin-top: 10px;">
+            <span class="section-title" style="margin-bottom:4px; font-size:0.85rem;" id="bottom-list-title">Details & Anwesenheit</span>
+            <div id="match-meta-details" style="font-size:0.8rem; color:var(--primary); margin-bottom:8px;"></div>
+            <div class="attendance-list" id="bottom-attendance-list-display" style="max-height: 160px;">
+                <div style="color:var(--text-muted); font-size:0.75rem;">Bitte oben ein Spiel auswählen.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sections-container">
+        <div class="custom-section">
+            <span class="section-title">Hinweise</span>
+            <div class="info-text">
+                • <strong>Training (Mo-Do & Fr):</strong> Wähle deine Uhrzeit per Klick aus.<br>
+                • <strong>Ligaspiel & Events:</strong> Rückmeldung und Organisation direkt im Kalendertag eintragen.<br>
+                • <strong>Geburtstage:</strong> Reine Info-Anzeige ohne Zu-/Absage.
+            </div>
+        </div>
+    </div>
+    
+    <div id="sync-status">Daten werden geladen...</div>
+</div>
+
+<!-- Modal für Tage -->
+<div class="modal" id="dayModal">
+    <div class="modal-content">
+        <h3 id="modal-date-title" style="margin-top:0;">Datum</h3>
+        
+        <!-- Admin-Bereich zum Erstellen / Anpassen von Ligaspielen, Events & Geburtstagen -->
+        <div id="admin-event-creator" style="display:none; background: #252525; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+            <span class="section-title" style="color:var(--primary);">Admin: Termin verwalten</span>
+            
+            <label for="admin-entry-type">Kategorie / Art:</label>
+            <select id="admin-entry-type" onchange="toggleAdminFormFields()">
+                <option value="match">Ligaspiel</option>
+                <option value="event">Freier Termin / Event</option>
+                <option value="birthday">Geburtstag</option>
+            </select>
+
+            <!-- Felder für Ligaspiel -->
+            <div id="admin-group-match" style="margin-top:8px;">
+                <label for="match-opponent-input">Gegner / Team:</label>
+                <input type="text" id="match-opponent-input" placeholder="z.B. gegen DC Bulls">
+                
+                <div style="display: flex; gap: 10px; margin-top:5px;">
+                    <div style="flex: 1;">
+                        <label for="match-location-select">Art:</label>
+                        <select id="match-location-select">
+                            <option value="Heim">Heimspiel (H)</option>
+                            <option value="Auswärts">Auswärtsspiel (A)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="match-time-input">Spielbeginn:</label>
+                        <input type="text" id="match-time-input" placeholder="z.B. 19:30">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top:5px;">
+                    <div style="flex: 1;">
+                        <label for="match-meeting-point">Treffpunkt (Ort):</label>
+                        <input type="text" id="match-meeting-point" placeholder="z.B. Parkplatz / Halle">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="match-meeting-time">Treffzeit:</label>
+                        <input type="text" id="match-meeting-time" placeholder="z.B. 18:30 Uhr">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Felder für Freies Event -->
+            <div id="admin-group-event" style="display:none; margin-top:8px;">
+                <label for="event-title-input">Titel des Termins:</label>
+                <input type="text" id="event-title-input" placeholder="z.B. Sonder-Training / Saisonabschluss">
+
+                <div style="display: flex; gap: 10px; margin-top:5px;">
+                    <div style="flex: 1;">
+                        <label for="event-time-input">Uhrzeit:</label>
+                        <input type="text" id="event-time-input" placeholder="z.B. 19:00 Uhr">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="event-location-input">Ort:</label>
+                        <input type="text" id="event-location-input" placeholder="z.B. Vereinsheim">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Felder für Geburtstag -->
+            <div id="admin-group-birthday" style="display:none; margin-top:8px;">
+                <label for="birthday-player-select">Wer hat Geburtstag?:</label>
+                <select id="birthday-player-select">
+                    <!-- Wird dynamisch gefüllt -->
+                </select>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:12px;">
+                <button class="btn-save" style="flex:1;" onclick="saveCustomEventByAdmin()">Speichern</button>
+                <button class="btn-danger" style="flex:1;" onclick="deleteEventByAdmin()">Termin löschen</button>
+            </div>
+        </div>
+
+        <!-- Trainings-Erstellung (Mo-Do & Fr) -->
+        <div id="player-training-creator" style="display:none; background: #252525; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+            <span class="section-title" style="color:var(--accent-training);">Training eintragen</span>
+            <label>Uhrzeit auswählen:</label>
+            <div class="time-chips" id="training-time-chips">
+                <div class="time-chip" onclick="selectTrainingTime('17:00 Uhr')">17:00</div>
+                <div class="time-chip" onclick="selectTrainingTime('17:30 Uhr')">17:30</div>
+                <div class="time-chip" onclick="selectTrainingTime('18:00 Uhr')">18:00</div>
+                <div class="time-chip" onclick="selectTrainingTime('18:30 Uhr')">18:30</div>
+                <div class="time-chip" onclick="selectTrainingTime('19:00 Uhr')">19:00</div>
+                <div class="time-chip" onclick="selectTrainingTime('19:30 Uhr')">19:30</div>
+                <div class="time-chip" onclick="selectTrainingTime('20:00 Uhr')">20:00</div>
+                <div class="time-chip" onclick="selectTrainingTime('Individuell')">Anderer</div>
+            </div>
+            <input type="text" id="training-time-input" placeholder="z.B. 19:15 Uhr" style="margin-top: 8px; display: none;">
+            
+            <button class="btn-save" style="width:100%; margin-top:10px;" onclick="saveMyTraining()">Training speichern</button>
+            <button class="btn-danger" style="width:100%; margin-top:5px; font-size:0.8rem;" onclick="removeMyTraining()">Training löschen</button>
+        </div>
+
+        <!-- Ligaspiel / Event Anwesenheits-Bereich für Spieler -->
+        <div class="attendance-box" id="match-attendance-section" style="display:none;">
+            <span class="section-title" id="match-box-title" style="margin-bottom:4px; font-size:0.85rem;">Teilnahme / Rückmeldung</span>
+            
+            <label for="player-match-status">Anwesenheit:</label>
+            <select id="player-match-status" onchange="toggleMatchExtraFields()">
+                <option value="yes">🟢 Dabei / Anwesend</option>
+                <option value="no">🔴 Kann nicht / Abwesend</option>
+            </select>
+
+            <!-- Dynamische Zusatzfelder für Auswärtsspiel (Fahrdienst) & Heimspiel (Catering) -->
+            <div id="player-match-extras" style="margin-top:8px;">
+                <div id="transport-field-group" style="display:none;">
+                    <label for="player-transport-select">Fahrdienst (Auswärts):</label>
+                    <select id="player-transport-select">
+                        <option value="Suche Mitfahrgelegenheit">Suche Mitfahrgelegenheit</option>
+                        <option value="Fahre selbst (Plätze frei)">Fahre selbst (habe Platz)</option>
+                        <option value="Fahre direkt / Eigener Weg">Fahre direkt / Eigener Weg</option>
+                    </select>
+                </div>
+
+                <div id="catering-field-group" style="display:none;">
+                    <label for="player-catering-readiness" style="margin-top:8px;">Catering Bereitschaft (Heimspiel):</label>
+                    <select id="player-catering-readiness">
+                        <option value="Nein">Nein</option>
+                        <option value="Ja">Ja</option>
+                    </select>
+
+                    <label for="player-catering-food" style="margin-top:8px;">Was bringe ich mit?</label>
+                    <input type="text" id="player-catering-food" placeholder="z.B. Frikadellen, Salat, Cola...">
+                </div>
+            </div>
+
+            <button class="btn-save" style="width:100%; margin-top:10px; padding:6px;" onclick="saveMatchAttendance()">Rückmeldung speichern</button>
+        </div>
+
+        <!-- Übersichtslisten für Modal -->
+        <div class="attendance-box" id="modal-attendance-container">
+            <span class="section-title" style="margin-bottom:4px; font-size:0.85rem;" id="list-title">Teilnehmer / Status</span>
+            <div class="attendance-list" id="attendance-list-display">
+                <!-- Dynamische Liste -->
+            </div>
+        </div>
+
+        <div class="modal-buttons" style="margin-top:15px;">
+            <button class="btn-close" onclick="closeModal()">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const JSONBIN_BIN_ID = "6a63716ada38895dfe8a1952"; 
+    const JSONBIN_MASTER_KEY = "$2a$10$1ynLUupN/Fka115SZVn9NurNpRBaWqrnH8qQXanu5c.cHPfriVgWS";
+
+    const PLAYERS_CONFIG = [
+        { name: "Jürgen Schützendorf", color: "#ff8a65" },
+        { name: "Ludger Schledorn", color: "#ba68c8" },
+        { name: "Markus Lenz", color: "#4db6ac" },
+        { name: "Niklas Weichert", color: "#ffd54f" },
+        { name: "Dominik Helmke", color: "#81c784" },
+        { name: "Michael Müller", color: "#64b5f6" },
+        { name: "Lars Neutag", color: "#ffb74d" },
+        { name: "Florian Hartwich", color: "#e57373" },
+        { name: "Markus Ginsel", color: "#9575cd" },
+        { name: "Andreas Denner", color: "#4dd0e1" },
+        { name: "Platzhalter 1", color: "#a1887f" },
+        { name: "Platzhalter 2", color: "#90a4ae" },
+        { name: "Platzhalter 3", color: "#dce775" },
+        { name: "Platzhalter 4", color: "#f06292" }
+    ];
+
+    let currentDate = new Date(2026, 6, 1);
+    let selectedDateKey = null;
+    
+    let appData = {
+        calendarEvents: {} 
+    };
+
+    const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+    window.addEventListener('DOMContentLoaded', () => {
+        initPlayerDropdowns();
+        checkActiveSession();
+        loadFromCloud();
+    });
+
+    function initPlayerDropdowns() {
+        const selectElem = document.getElementById('global-user-select');
+        selectElem.innerHTML = '<option value="">-- Spieler auswählen --</option>';
+        
+        const bdayElem = document.getElementById('birthday-player-select');
+        bdayElem.innerHTML = '<option value="">-- Spieler auswählen --</option>';
+
+        PLAYERS_CONFIG.forEach(p => {
+            let opt = document.createElement('option');
+            opt.value = p.name;
+            opt.textContent = p.name;
+            selectElem.appendChild(opt);
+
+            let optB = document.createElement('option');
+            optB.value = p.name;
+            optB.textContent = p.name;
+            bdayElem.appendChild(optB);
+        });
+    }
+
+    function checkActiveSession() {
+        const active = localStorage.getItem('tv_kapellen_active_user');
+        if (active) {
+            document.getElementById('global-user-select').value = active;
+            document.getElementById('active-user-display').innerHTML = `Angemeldet: <strong style="color: ${getPlayerColor(active)};">${active}</strong>`;
+            document.getElementById('logout-btn').style.display = 'inline-block';
+        } else {
+            document.getElementById('active-user-display').textContent = 'Nicht angemeldet';
+            document.getElementById('logout-btn').style.display = 'none';
+        }
+    }
+
+    function getPlayerColor(name) {
+        let found = PLAYERS_CONFIG.find(p => p.name === name);
+        return found ? found.color : '#e0e0e0';
+    }
+
+    function loginDirectly() {
+        const selectElem = document.getElementById('global-user-select');
+        const chosen = selectElem.value;
+        if (!chosen) {
+            logoutUser();
+            return;
+        }
+        localStorage.setItem('tv_kapellen_active_user', chosen);
+        checkActiveSession();
+        renderCalendar();
+    }
+
+    function logoutUser() {
+        localStorage.removeItem('tv_kapellen_active_user');
+        checkActiveSession();
+        initPlayerDropdowns();
+        renderCalendar();
+    }
+
+    function getActiveUser() {
+        return localStorage.getItem('tv_kapellen_active_user');
+    }
+
+    function isAdmin(user) {
+        return user === "Jürgen Schützendorf";
+    }
+
+    async function loadFromCloud() {
+        try {
+            document.getElementById('sync-status').textContent = "Lade Daten...";
+            let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+            });
+            if (response.ok) {
+                let json = await response.json();
+                if (json.record) {
+                    appData = json.record;
+                    cleanUpLegacyKeys();
+                }
+                document.getElementById('sync-status').textContent = "Synchronisiert ✓";
+            }
+        } catch (e) {
+            console.error("Ladefehler:", e);
+            document.getElementById('sync-status').textContent = "Fehler beim Laden";
+        }
+        renderCalendar();
+    }
+
+    function cleanUpLegacyKeys() {
+        if (!appData.calendarEvents) return;
+        for (let dateKey in appData.calendarEvents) {
+            let ev = appData.calendarEvents[dateKey];
+            if (ev.type === 'training' && ev.trainings) {
+                let keys = Object.keys(ev.trainings);
+                keys.forEach(k => {
+                    if (k.includes("(Admin)")) {
+                        let cleanName = k.replace(" (Admin)", "").trim();
+                        if (!ev.trainings[cleanName]) {
+                            ev.trainings[cleanName] = ev.trainings[k];
+                        }
+                        delete ev.trainings[k];
+                    }
+                });
+            }
+        }
+    }
+
+    async function saveToCloud() {
+        try {
+            document.getElementById('sync-status').textContent = "Speichere...";
+            let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_MASTER_KEY
+                },
+                body: JSON.stringify(appData)
+            });
+            if (response.ok) {
+                document.getElementById('sync-status').textContent = "Gespeichert ✓";
+            } else {
+                document.getElementById('sync-status').textContent = "Fehler beim Speichern";
+            }
+        } catch (e) {
+            console.error("Speicherfehler:", e);
+            document.getElementById('sync-status').textContent = "Verbindungsfehler";
+        }
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        document.getElementById('month-year-display').textContent = `${months[month]} ${year}`;
+
+        const grid = document.getElementById('calendar-days');
+        grid.innerHTML = '';
+
+        const todayObj = new Date();
+        const todayKey = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+
+        const firstDayOfMonth = new Date(year, month, 1);
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        let firstDayIndex = firstDayOfMonth.getDay() - 1;
+        if (firstDayIndex === -1) firstDayIndex = 6;
+
+        for (let i = 0; i < firstDayIndex; i++) {
+            let emptyCell = document.createElement('div');
+            emptyCell.className = 'day-cell';
+            emptyCell.style.visibility = 'hidden';
+            emptyCell.style.border = 'none';
+            emptyCell.style.background = 'transparent';
+            grid.appendChild(emptyCell);
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const events = appData.calendarEvents || {};
+            const dayEvent = events[dateKey] || null;
+
+            let cellClass = 'day-cell';
+            if (dayEvent) {
+                if (dayEvent.type === 'match') {
+                    cellClass += (dayEvent.location === 'Heim') ? ' match-home' : ' match-away';
+                } else if (dayEvent.type === 'event') {
+                    cellClass += ' event';
+                } else if (dayEvent.type === 'birthday') {
+                    cellClass += ' birthday';
+                } else if (dayEvent.type === 'training') {
+                    cellClass += ' training';
+                }
+            }
+            if (dateKey === todayKey) cellClass += ' today';
+
+            const cell = document.createElement('div');
+            cell.className = cellClass;
+            cell.onclick = () => openModal(dateKey);
+
+            let badgeHTML = '';
+            let statusHTML = '';
+
+            if (dayEvent) {
+                if (dayEvent.type === 'match') {
+                    let isHome = dayEvent.location === 'Heim';
+                    let badgeClass = isHome ? 'badge-match-home' : 'badge-match-away';
+                    badgeHTML = `<span class="${badgeClass}">SPIEL ${isHome ? '(H)' : '(A)'}</span>`;
+                    
+                    let att = dayEvent.attendance || {};
+                    let countYes = Object.values(att).filter(v => v.status === 'yes').length;
+                    let countNo = Object.values(att).filter(v => v.status === 'no').length;
+                    let timeStr = dayEvent.time ? `um ${dayEvent.time} Uhr` : '';
+                    statusHTML = `<div style="font-size:0.55rem; margin-top:2px;"><strong>${dayEvent.info || 'Ligaspiel'}</strong><br>${timeStr}<br>🟢 ${countYes} | 🔴 ${countNo}</div>`;
+                } else if (dayEvent.type === 'event') {
+                    badgeHTML = `<span class="badge-event">EVENT</span>`;
+                    let att = dayEvent.attendance || {};
+                    let countYes = Object.values(att).filter(v => v.status === 'yes').length;
+                    let countNo = Object.values(att).filter(v => v.status === 'no').length;
+                    let timeStr = dayEvent.time ? `um ${dayEvent.time} Uhr` : '';
+                    statusHTML = `<div style="font-size:0.55rem; margin-top:2px;"><strong>${dayEvent.info || 'Event'}</strong><br>${timeStr}<br>🟢 ${countYes} | 🔴 ${countNo}</div>`;
+                } else if (dayEvent.type === 'birthday') {
+                    badgeHTML = `<span class="badge-birthday">GEBURTSTAG</span>`;
+                    let bdayName = dayEvent.info || '';
+                    // Kürze den Namen bei Bedarf etwas ab für die Monatsansicht, z.B. nur Vorname oder Nachname wenn zu lang
+                    statusHTML = `<div style="font-size:0.6rem; color:var(--accent-birthday); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">🎂 <strong>${bdayName}</strong></div>`;
+                } else if (dayEvent.type === 'training') {
+                    badgeHTML = `<span class="badge-training">TRAINING</span>`;
+                    let trainings = dayEvent.trainings || {};
+                    let snippets = '';
+                    
+                    PLAYERS_CONFIG.forEach(p => {
+                        if (trainings[p.name]) {
+                            let shortName = p.name.split(' ')[0];
+                            snippets += `
+                                <div class="day-training-snippet" style="border-left-color: ${p.color};">
+                                    <span style="color:${p.color}; font-weight:bold;">${shortName}</span>
+                                    <span>${trainings[p.name].replace(' Uhr', '')}</span>
+                                </div>
+                            `;
+                        }
+                    });
+                    statusHTML = snippets || '<span style="color:var(--text-muted)">Keine</span>';
+                }
+            }
+
+            cell.innerHTML = `
+                <div class="day-header-row">
+                    <div class="day-number">${day}</div>
+                    ${badgeHTML}
+                </div>
+                <div class="day-status">${statusHTML}</div>
+            `;
+            grid.appendChild(cell);
+        }
+
+        updateBottomMatchDropdown();
+        updateWeekTrainingOverview();
+    }
+
+    function updateBottomMatchDropdown() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const dropdown = document.getElementById('match-selector-dropdown');
+        const previousSelection = dropdown.value;
+
+        dropdown.innerHTML = '<option value="">-- Bitte Spieltag auswählen --</option>';
+        
+        let matchesInMonth = [];
+        const events = appData.calendarEvents || {};
+
+        for (let dateKey in events) {
+            let ev = events[dateKey];
+            if (ev.type === 'match') {
+                let [eYear, eMonth] = dateKey.split('-').map(Number);
+                if (eYear === year && (eMonth - 1) === month) {
+                    matchesInMonth.push({ dateKey: dateKey, ...ev });
+                }
+            }
+        }
+
+        matchesInMonth.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+        if (matchesInMonth.length === 0) {
+            dropdown.innerHTML = '<option value="">-- Keine Ligaspiele in diesem Monat --</option>';
+            document.getElementById('bottom-attendance-list-display').innerHTML = '<div style="color:var(--text-muted); font-size:0.75rem;">Keine Spiele im aktuellen Monat vorhanden.</div>';
+            document.getElementById('bottom-list-title').textContent = "Details & Anwesenheit";
+            document.getElementById('match-meta-details').textContent = "";
+            return;
+        }
+
+        matchesInMonth.forEach(m => {
+            let opt = document.createElement('option');
+            opt.value = m.dateKey;
+            let locText = m.location === 'Auswärts' ? 'Auswärts' : 'Heim';
+            opt.textContent = `${m.dateKey} - ${m.info} (${locText}, ${m.time || 'Zeit n.b.'})`;
+            dropdown.appendChild(opt);
+        });
+
+        if (previousSelection && events[previousSelection] && events[previousSelection].type === 'match') {
+            dropdown.value = previousSelection;
+        } else if (matchesInMonth.length > 0) {
+            dropdown.value = matchesInMonth[0].dateKey;
+        }
+
+        onSelectedMatchChange();
+    }
+
+    function getSortedPlayersForMatch(match) {
+        let attendanceObj = match.attendance || {};
+        let yesList = [];
+        let noList = [];
+        let pendingList = [];
+
+        PLAYERS_CONFIG.forEach(p => {
+            let entry = attendanceObj[p.name] || {};
+            let status = entry.status;
+            let playerObj = { player: p, entry: entry };
+
+            if (status === 'yes') {
+                yesList.push(playerObj);
+            } else if (status === 'no') {
+                noList.push(playerObj);
+            } else {
+                pendingList.push(playerObj);
+            }
+        });
+
+        return [...yesList, ...noList, ...pendingList];
+    }
+
+    function onSelectedMatchChange() {
+        const dropdown = document.getElementById('match-selector-dropdown');
+        const selectedKey = dropdown.value;
+        const listDisplay = document.getElementById('bottom-attendance-list-display');
+        const metaDetails = document.getElementById('match-meta-details');
+
+        if (!selectedKey) {
+            listDisplay.innerHTML = '<div style="color:var(--text-muted); font-size:0.75rem;">Bitte wählen Sie ein Spiel aus.</div>';
+            document.getElementById('bottom-list-title').textContent = "Details & Anwesenheit";
+            metaDetails.textContent = "";
+            return;
+        }
+
+        const events = appData.calendarEvents || {};
+        const match = events[selectedKey];
+
+        if (!match || match.type !== 'match') {
+            listDisplay.innerHTML = '<div style="color:var(--text-muted); font-size:0.75rem;">Spiel nicht gefunden.</div>';
+            metaDetails.textContent = "";
+            return;
+        }
+
+        let locText = match.location === 'Auswärts' ? 'Auswärtsspiel (A)' : 'Heimspiel (H)';
+        let timeText = match.time ? `um ${match.time} Uhr` : '';
+        document.getElementById('bottom-list-title').textContent = `${match.info} (${locText} am ${selectedKey} ${timeText})`;
+
+        let meetText = match.meetingPoint ? `📍 Treffpunkt: ${match.meetingPoint} (${match.meetingTime || 'Zeit n.b.'})` : '📍 Treffpunkt: Noch nicht festgelegt';
+        metaDetails.textContent = meetText;
+
+        let html = '';
+        let sortedPlayers = getSortedPlayersForMatch(match);
+
+        sortedPlayers.forEach(item => {
+            let p = item.player;
+            let entry = item.entry;
+            let status = entry.status;
+            let color = status === 'yes' ? 'var(--accent-yes)' : (status === 'no' ? 'var(--accent-no)' : 'var(--text-muted)');
+            let text = status === 'yes' ? '🟢 Dabei' : (status === 'no' ? '🔴 Abgesagt' : '⏳ Ausstehend');
+            
+            let extraInfo = '';
+            if (status === 'yes') {
+                if (match.location === 'Auswärts' && entry.transport) {
+                    extraInfo += `🚗 ${entry.transport}`;
+                }
+                if (match.location === 'Heim' && entry.cateringReady && entry.cateringReady === 'Ja') {
+                    let foodStr = entry.cateringFood ? ` — ${entry.cateringFood}` : '';
+                    extraInfo += `🌭 Catering: Ja${foodStr}`;
+                }
+            }
+
+            html += `
+                <div class="attendance-item" style="border-left: 3px solid ${p.color}; flex-direction:column; align-items:flex-start;">
+                    <div style="display:flex; width:100%; justify-content:space-between;">
+                        <span style="font-weight:bold; color:${p.color};">${p.name}</span>
+                        <span style="color: ${color}; font-weight: bold; font-size:0.75rem;">${text}</span>
+                    </div>
+                    ${extraInfo ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">${extraInfo}</div>` : ''}
+                </div>
+            `;
+        });
+        listDisplay.innerHTML = html;
+    }
+
+    function updateWeekTrainingOverview() {
+        const weekListDisplay = document.getElementById('week-training-list-display');
+        const weekTitle = document.getElementById('training-week-title');
+
+        let now = new Date();
+        let dayOfWeek = now.getDay();
+        let distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        
+        let monday = new Date(now);
+        monday.setDate(now.getDate() + distanceToMonday);
+        monday.setHours(0, 0, 0, 0);
+
+        let sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        let formatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit' });
+        weekTitle.textContent = `Woche: ${formatter.format(monday)} - ${formatter.format(sunday)}`;
+
+        const events = appData.calendarEvents || {};
+        let trainingDaysInWeek = [];
+
+        for (let dateKey in events) {
+            let ev = events[dateKey];
+            if (ev.type === 'training' && ev.trainings && Object.keys(ev.trainings).length > 0) {
+                let [y, m, d] = dateKey.split('-').map(Number);
+                let evDate = new Date(y, m - 1, d);
+                if (evDate >= monday && evDate <= sunday) {
+                    trainingDaysInWeek.push({ dateKey: dateKey, trainings: ev.trainings });
+                }
+            }
+        }
+
+        trainingDaysInWeek.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+        if (trainingDaysInWeek.length === 0) {
+            weekListDisplay.innerHTML = '<div style="color:var(--text-muted); font-size:0.75rem;">Keine Trainingseinträge in dieser Woche.</div>';
+            return;
+        }
+
+        let html = '';
+        trainingDaysInWeek.forEach(item => {
+            let [y, m, d] = item.dateKey.split('-');
+            let readableDate = `${d}.${m}.${y}`;
+
+            html += `<div style="font-size:0.75rem; font-weight:bold; color:var(--primary); margin-top:6px; margin-bottom:2px; border-bottom:1px solid #333; padding-bottom:2px;">📅 ${readableDate}</div>`;
+
+            PLAYERS_CONFIG.forEach(p => {
+                if (item.trainings[p.name]) {
+                    let time = item.trainings[p.name];
+                    html += `
+                        <div class="attendance-item" style="border-left: 3px solid ${p.color}; margin-bottom: 4px;">
+                            <span style="font-weight:bold; color:${p.color};">${p.name}</span>
+                            <span style="color: var(--accent-training); font-weight: bold; font-size:0.75rem;">🕒 ${time}</span>
+                        </div>
+                    `;
+                }
+            });
+        });
+
+        weekListDisplay.innerHTML = html;
+    }
+
+    function changeMonth(direction) {
+        currentDate.setMonth(currentDate.getMonth() + direction);
+        renderCalendar();
+    }
+
+    function openModal(dateKey) {
+        selectedDateKey = dateKey;
+        document.getElementById('modal-date-title').textContent = `Datum: ${dateKey}`;
+        
+        let [y, m, d] = dateKey.split('-').map(Number);
+        let clickedDateObj = new Date(y, m - 1, d);
+        let dayOfWeek = clickedDateObj.getDay(); 
+
+        const activeUser = getActiveUser();
+        const events = appData.calendarEvents || {};
+        const dayEvent = events[dateKey] || null;
+
+        const adminCreator = document.getElementById('admin-event-creator');
+        const playerTrainer = document.getElementById('player-training-creator');
+        const matchAttSection = document.getElementById('match-attendance-section');
+        const modalAttContainer = document.getElementById('modal-attendance-container');
+
+        adminCreator.style.display = 'none';
+        playerTrainer.style.display = 'none';
+        matchAttSection.style.display = 'none';
+        modalAttContainer.style.display = 'block';
+
+        if (isAdmin(activeUser)) {
+            adminCreator.style.display = 'block';
+            if (dayEvent) {
+                document.getElementById('admin-entry-type').value = (dayEvent.type === 'match' || dayEvent.type === 'event' || dayEvent.type === 'birthday') ? dayEvent.type : 'match';
+                if (dayEvent.type === 'match') {
+                    document.getElementById('match-opponent-input').value = dayEvent.info || '';
+                    document.getElementById('match-location-select').value = dayEvent.location || 'Heim';
+                    document.getElementById('match-time-input').value = dayEvent.time || '';
+                    document.getElementById('match-meeting-point').value = dayEvent.meetingPoint || '';
+                    document.getElementById('match-meeting-time').value = dayEvent.meetingTime || '';
+                } else if (dayEvent.type === 'event') {
+                    document.getElementById('event-title-input').value = dayEvent.info || '';
+                    document.getElementById('event-time-input').value = dayEvent.time || '';
+                    document.getElementById('event-location-input').value = dayEvent.location || '';
+                } else if (dayEvent.type === 'birthday') {
+                    document.getElementById('birthday-player-select').value = dayEvent.info || '';
+                }
+            } else {
+                document.getElementById('admin-entry-type').value = 'match';
+                document.getElementById('match-opponent-input').value = '';
+                document.getElementById('event-title-input').value = '';
+                document.getElementById('birthday-player-select').value = '';
+            }
+            toggleAdminFormFields();
+        }
+
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            if (activeUser && (!dayEvent || dayEvent.type === 'training' || dayEvent.type === 'match' || dayEvent.type === 'event')) {
+                if (!dayEvent || dayEvent.type !== 'birthday') {
+                    playerTrainer.style.display = 'block';
+                    let timeVal = (dayEvent && dayEvent.type === 'training' && dayEvent.trainings && dayEvent.trainings[activeUser]) || '19:00 Uhr';
+                    setTrainingTimeUI(timeVal);
+                }
+            }
+        }
+
+        if (dayEvent && (dayEvent.type === 'match' || dayEvent.type === 'event')) {
+            if (activeUser) {
+                matchAttSection.style.display = 'block';
+                let userEntry = (dayEvent.attendance && dayEvent.attendance[activeUser]) || {};
+                document.getElementById('player-match-status').value = userEntry.status || 'yes';
+                document.getElementById('player-transport-select').value = userEntry.transport || 'Suche Mitfahrgelegenheit';
+                document.getElementById('player-catering-readiness').value = userEntry.cateringReady || 'Nein';
+                document.getElementById('player-catering-food').value = userEntry.cateringFood || '';
+                
+                document.getElementById('transport-field-group').style.display = (dayEvent.type === 'match' && dayEvent.location === 'Auswärts') ? 'block' : 'none';
+                document.getElementById('catering-field-group').style.display = (dayEvent.type === 'match' && dayEvent.location === 'Heim') ? 'block' : 'none';
+
+                document.getElementById('match-box-title').textContent = "Teilnahme & Rückmeldung";
+            }
+            renderMatchAttendanceList(dayEvent);
+        } else if (dayEvent && dayEvent.type === 'birthday') {
+            modalAttContainer.style.display = 'none'; 
+        } else if (dayEvent && dayEvent.type === 'training') {
+            renderTrainingList(dayEvent.trainings || {});
+        } else {
+            renderEmptyList();
+        }
+
+        document.getElementById('dayModal').style.display = 'flex';
+    }
+
+    function toggleAdminFormFields() {
+        const type = document.getElementById('admin-entry-type').value;
+        document.getElementById('admin-group-match').style.display = (type === 'match') ? 'block' : 'none';
+        document.getElementById('admin-group-event').style.display = (type === 'event') ? 'block' : 'none';
+        document.getElementById('admin-group-birthday').style.display = (type === 'birthday') ? 'block' : 'none';
+    }
+
+    function toggleMatchExtraFields() {
+        const status = document.getElementById('player-match-status').value;
+        const extras = document.getElementById('player-match-extras');
+        extras.style.display = (status === 'yes') ? 'block' : 'none';
+    }
+
+    function selectTrainingTime(timeStr) {
+        const customInput = document.getElementById('training-time-input');
+        const chips = document.querySelectorAll('.time-chip');
+        
+        chips.forEach(c => c.classList.remove('selected'));
+
+        if (timeStr === 'Individuell') {
+            customInput.style.display = 'block';
+            customInput.focus();
+            chips.forEach(c => { if(c.textContent === 'Anderer') c.classList.add('selected'); });
+        } else {
+            customInput.style.display = 'none';
+            customInput.value = timeStr;
+            chips.forEach(c => {
+                if (c.textContent === timeStr.replace(' Uhr', '')) {
+                    c.classList.add('selected');
+                }
+            });
+        }
+    }
+
+    function setTrainingTimeUI(timeVal) {
+        const customInput = document.getElementById('training-time-input');
+        const chips = document.querySelectorAll('.time-chip');
+        chips.forEach(c => c.classList.remove('selected'));
+
+        let clean = timeVal.replace(' Uhr', '');
+        let foundMatch = false;
+        chips.forEach(c => {
+            if (c.textContent === clean) {
+                c.classList.add('selected');
+                foundMatch = true;
+            }
+        });
+
+        if (foundMatch) {
+            customInput.style.display = 'none';
+            customInput.value = timeVal;
+        } else {
+            customInput.style.display = 'block';
+            customInput.value = timeVal;
+            chips.forEach(c => { if(c.textContent === 'Anderer') c.classList.add('selected'); });
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('dayModal').style.display = 'none';
+    }
+
+    function renderMatchAttendanceList(dayEvent) {
+        let titlePrefix = dayEvent.type === 'match' ? (dayEvent.location === 'Heim' ? 'Heimspiel (H)' : 'Auswärtsspiel (A)') : 'Freies Event';
+        let timeText = dayEvent.time ? `um ${dayEvent.time} Uhr` : '';
+        let locText = dayEvent.location && dayEvent.type === 'event' ? ` | Ort: ${dayEvent.location}` : '';
+        document.getElementById('list-title').textContent = `${dayEvent.info || 'Termin'} — ${titlePrefix} ${timeText}${locText}`;
+        
+        const listDisplay = document.getElementById('attendance-list-display');
+        let html = '';
+        let sortedPlayers = getSortedPlayersForMatch(dayEvent);
+        
+        sortedPlayers.forEach(item => {
+            let p = item.player;
+            let entry = item.entry;
+            let status = entry.status;
+            let color = status === 'yes' ? 'var(--accent-yes)' : (status === 'no' ? 'var(--accent-no)' : 'var(--text-muted)');
+            let text = status === 'yes' ? '🟢 Dabei' : (status === 'no' ? '🔴 Abgesagt' : '⏳ Ausstehend');
+            
+            let extraInfo = '';
+            if (status === 'yes' && dayEvent.type === 'match') {
+                if (dayEvent.location === 'Auswärts' && entry.transport) {
+                    extraInfo += `🚗 ${entry.transport}`;
+                }
+                if (dayEvent.location === 'Heim' && entry.cateringReady && entry.cateringReady === 'Ja') {
+                    let foodStr = entry.cateringFood ? ` — ${entry.cateringFood}` : '';
+                    extraInfo += `🌭 Catering: Ja${foodStr}`;
+                }
+            }
+
+            html += `
+                <div class="attendance-item" style="border-left: 3px solid ${p.color}; flex-direction:column; align-items:flex-start;">
+                    <div style="display:flex; width:100%; justify-content:space-between;">
+                        <span style="font-weight:bold; color:${p.color};">${p.name}</span>
+                        <span style="color: ${color}; font-weight: bold; font-size:0.75rem;">${text}</span>
+                    </div>
+                    ${extraInfo ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">${extraInfo}</div>` : ''}
+                </div>
+            `;
+        });
+        listDisplay.innerHTML = html;
+    }
+
+    function renderTrainingList(trainingsObj) {
+        document.getElementById('list-title').textContent = "Wer kommt zum Training?";
+        const listDisplay = document.getElementById('attendance-list-display');
+        
+        let keys = Object.keys(trainingsObj || {});
+        if (keys.length === 0) {
+            listDisplay.innerHTML = '<div style="color:var(--text-muted); font-size:0.75rem;">Bisher hat sich niemand für Training eingetragen.</div>';
+            return;
+        }
+
+        let html = '';
+        PLAYERS_CONFIG.forEach(p => {
+            let time = trainingsObj[p.name];
+            if (time) {
+                html += `
+                    <div class="attendance-item" style="border-left: 3px solid ${p.color};">
+                        <span style="font-weight:bold; color:${p.color};">${p.name}</span>
+                        <span style="color: var(--accent-training); font-weight: bold; font-size:0.75rem;">🕒 ${time}</span>
+                    </div>
+                `;
+            }
+        });
+        listDisplay.innerHTML = html;
+    }
+
+    function renderEmptyList() {
+        document.getElementById('list-title').textContent = "Einträge für diesen Tag";
+        document.getElementById('attendance-list-display').innerHTML = '<div style="color:var(--text-muted); font-size:0.75rem;">Noch keine Termine oder Anwesenheiten eingetragen.</div>';
+    }
+
+    function saveCustomEventByAdmin() {
+        const type = document.getElementById('admin-entry-type').value;
+        if (!appData.calendarEvents) appData.calendarEvents = {};
+        
+        let existingAtt = (appData.calendarEvents[selectedDateKey] && (appData.calendarEvents[selectedDateKey].type === 'match' || appData.calendarEvents[selectedDateKey].type === 'event')) 
+                          ? (appData.calendarEvents[selectedDateKey].attendance || {}) 
+                          : {};
+
+        if (type === 'match') {
+            const info = document.getElementById('match-opponent-input').value.trim();
+            const location = document.getElementById('match-location-select').value;
+            const time = document.getElementById('match-time-input').value.trim();
+            const meetingPoint = document.getElementById('match-meeting-point').value.trim();
+            const meetingTime = document.getElementById('match-meeting-time').value.trim();
+
+            appData.calendarEvents[selectedDateKey] = {
+                type: 'match',
+                info: info || 'Ligaspiel',
+                location: location,
+                time: time,
+                meetingPoint: meetingPoint,
+                meetingTime: meetingTime,
+                attendance: existingAtt
+            };
+        } else if (type === 'event') {
+            const info = document.getElementById('event-title-input').value.trim();
+            const time = document.getElementById('event-time-input').value.trim();
+            const location = document.getElementById('event-location-input').value.trim();
+
+            appData.calendarEvents[selectedDateKey] = {
+                type: 'event',
+                info: info || 'Sonder-Event',
+                time: time,
+                location: location,
+                attendance: existingAtt
+            };
+        } else if (type === 'birthday') {
+            const playerName = document.getElementById('birthday-player-select').value;
+            appData.calendarEvents[selectedDateKey] = {
+                type: 'birthday',
+                info: playerName || 'Geburtstag'
+            };
+        }
+
+        closeModal();
+        saveToCloud();
+    }
+
+    function deleteEventByAdmin() {
+        if (appData.calendarEvents && appData.calendarEvents[selectedDateKey]) {
+            delete appData.calendarEvents[selectedDateKey];
+        }
+        closeModal();
+        saveToCloud();
+    }
+
+    function saveMyTraining() {
+        const activeUser = getActiveUser();
+        if (!activeUser) {
+            alert('Bitte zuerst oben einen Spieler auswählen!');
+            return;
+        }
+        const timeVal = document.getElementById('training-time-input').value.trim() || '19:00 Uhr';
+
+        if (!appData.calendarEvents) appData.calendarEvents = {};
+        
+        let currentDayEvent = appData.calendarEvents[selectedDateKey];
+        let preservedData = (currentDayEvent && (currentDayEvent.type === 'match' || currentDayEvent.type === 'event')) ? currentDayEvent : null;
+
+        appData.calendarEvents[selectedDateKey] = {
+            type: 'training',
+            trainings: (currentDayEvent && currentDayEvent.trainings) ? currentDayEvent.trainings : {}
+        };
+
+        if (preservedData) {
+            appData.calendarEvents[selectedDateKey] = preservedData; 
+        }
+
+        if (!appData.calendarEvents[selectedDateKey].trainings) {
+            appData.calendarEvents[selectedDateKey].trainings = {};
+        }
+        appData.calendarEvents[selectedDateKey].trainings[activeUser] = timeVal;
+
+        closeModal();
+        saveToCloud();
+    }
+
+    function removeMyTraining() {
+        const activeUser = getActiveUser();
+        if (!activeUser) return;
+
+        if (appData.calendarEvents && appData.calendarEvents[selectedDateKey] && appData.calendarEvents[selectedDateKey].trainings) {
+            delete appData.calendarEvents[selectedDateKey].trainings[activeUser];
+
+            if (Object.keys(appData.calendarEvents[selectedDateKey].trainings).length === 0 && appData.calendarEvents[selectedDateKey].type === 'training') {
+                delete appData.calendarEvents[selectedDateKey];
+            }
+        }
+        closeModal();
+        saveToCloud();
+    }
+
+    function saveMatchAttendance() {
+        const activeUser = getActiveUser();
+        if (!activeUser) {
+            alert('Bitte zuerst oben einen Spieler auswählen!');
+            return;
+        }
+        const status = document.getElementById('player-match-status').value;
+        const transport = document.getElementById('player-transport-select').value;
+        const cateringReady = document.getElementById('player-catering-readiness').value;
+        const cateringFood = document.getElementById('player-catering-food').value.trim();
+
+        if (appData.calendarEvents && appData.calendarEvents[selectedDateKey]) {
+            if (!appData.calendarEvents[selectedDateKey].attendance) {
+                appData.calendarEvents[selectedDateKey].attendance = {};
+            }
+            appData.calendarEvents[selectedDateKey].attendance[activeUser] = {
+                status: status,
+                transport: transport,
+                cateringReady: cateringReady,
+                cateringFood: cateringFood
+            };
+        }
+
+        closeModal();
+        saveToCloud();
+    }
+
+    loadFromCloud();
+</script>
+
+</body>
+</html>
